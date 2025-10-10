@@ -28,10 +28,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     super()
 
     this.core = core || null
-
     this.keyPair = opts.keyPair || null
-    this.genesisEntropy = opts.genesis || null
-
     this.encryption = new HypercoreEncryption(this.get.bind(this))
 
     this._initialising = null
@@ -80,12 +77,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     if (id === -1) id = this.core.length
 
-    if (id === 0) {
-      return {
-        id: 0,
-        encryptionKey: this.genesisEntropy
-      }
-    }
+    if (!id) return { id: 0, encryptionKey: null }
 
     const payload = await this.core.get(id - 1, opts)
     if (!payload) return null

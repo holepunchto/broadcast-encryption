@@ -5,14 +5,13 @@ import Broadcast from './index.js'
 
 const keyPair1 = crypto.keyPair()
 const keyPair2 = crypto.keyPair()
-const genesis = b4a.alloc(32, 1)
 
 const local = new Corestore('./local')
 const remote = new Corestore('./remote')
 
 // set up the writer
 const broadcasterCore = local.get({ name: 'broadcast' })
-const broadcaster = new Broadcast(broadcasterCore, { genesis, keyPair: keyPair1 })
+const broadcaster = new Broadcast(broadcasterCore, { keyPair: keyPair1 })
 await broadcaster.ready()
 
 const writer = local.get({ name: 'data' })
@@ -21,7 +20,7 @@ await writer.setEncryption(broadcaster.createEncryptionProvider())
 
 // set up the reader
 const receiverCore = remote.get({ key: broadcaster.core.key })
-const receiver = new Broadcast(receiverCore, { genesis, keyPair: keyPair2 })
+const receiver = new Broadcast(receiverCore, { keyPair: keyPair2 })
 await receiver.ready()
 
 const reader = remote.get({ key: writer.key })
@@ -29,6 +28,9 @@ await reader.ready()
 await reader.setEncryption(receiver.createEncryptionProvider())
 
 replicate(local, remote)
+
+// initialise encryption key
+await broadcaster.update(b4a.alloc(32, 1), [keyPair1.publicKey, keyPair2.publicKey])
 
 // write some data
 await writer.append('block 1')
