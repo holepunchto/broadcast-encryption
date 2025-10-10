@@ -12,33 +12,88 @@ const VERSION = 1
 let version = VERSION
 
 // @broadcast/payload.payload
-const encoding0_3 = c.array(c.buffer)
+const encoding0_1 = c.array(c.buffer)
 
 // @broadcast/payload
 const encoding0 = {
   preencode(state, m) {
-    c.uint.preencode(state, m.version)
-    c.buffer.preencode(state, m.nonce)
     c.fixed32.preencode(state, m.publicKey)
-    encoding0_3.preencode(state, m.payload)
+    encoding0_1.preencode(state, m.payload)
   },
   encode(state, m) {
-    c.uint.encode(state, m.version)
-    c.buffer.encode(state, m.nonce)
     c.fixed32.encode(state, m.publicKey)
-    encoding0_3.encode(state, m.payload)
+    encoding0_1.encode(state, m.payload)
+  },
+  decode(state) {
+    const r0 = c.fixed32.decode(state)
+    const r1 = encoding0_1.decode(state)
+
+    return {
+      publicKey: r0,
+      payload: r1
+    }
+  }
+}
+
+// @broadcast/pointer.payload
+const encoding1_2 = encoding0_1
+
+// @broadcast/pointer
+const encoding1 = {
+  preencode(state, m) {
+    c.uint.preencode(state, m.id)
+    c.uint.preencode(state, m.for)
+    encoding1_2.preencode(state, m.payload)
+  },
+  encode(state, m) {
+    c.uint.encode(state, m.id)
+    c.uint.encode(state, m.for)
+    encoding1_2.encode(state, m.payload)
   },
   decode(state) {
     const r0 = c.uint.decode(state)
-    const r1 = c.buffer.decode(state)
-    const r2 = c.fixed32.decode(state)
-    const r3 = encoding0_3.decode(state)
+    const r1 = c.uint.decode(state)
+    const r2 = encoding1_2.decode(state)
+
+    return {
+      id: r0,
+      for: r1,
+      payload: r2
+    }
+  }
+}
+
+// @broadcast/message.payload
+const encoding2_1 = c.frame(encoding0)
+// @broadcast/message.pointer
+const encoding2_2 = c.frame(encoding1)
+
+// @broadcast/message
+const encoding2 = {
+  preencode(state, m) {
+    c.uint.preencode(state, m.version)
+    state.end++ // max flag is 2 so always one byte
+
+    if (m.payload) encoding2_1.preencode(state, m.payload)
+    if (m.pointer) encoding2_2.preencode(state, m.pointer)
+  },
+  encode(state, m) {
+    const flags = (m.payload ? 1 : 0) | (m.pointer ? 2 : 0)
+
+    c.uint.encode(state, m.version)
+    c.uint.encode(state, flags)
+
+    if (m.payload) encoding2_1.encode(state, m.payload)
+    if (m.pointer) encoding2_2.encode(state, m.pointer)
+  },
+  decode(state) {
+    const r0 = c.uint.decode(state)
+    const flags = c.uint.decode(state)
 
     return {
       version: r0,
-      nonce: r1,
-      publicKey: r2,
-      payload: r3
+      payload: (flags & 1) !== 0 ? encoding2_1.decode(state) : null,
+      pointer: (flags & 2) !== 0 ? encoding2_2.decode(state) : null
     }
   }
 }
@@ -68,6 +123,10 @@ function getEncoding(name) {
   switch (name) {
     case '@broadcast/payload':
       return encoding0
+    case '@broadcast/pointer':
+      return encoding1
+    case '@broadcast/message':
+      return encoding2
     default:
       throw new Error('Encoder not found ' + name)
   }

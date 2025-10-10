@@ -8,18 +8,6 @@
       "flagsPosition": -1,
       "fields": [
         {
-          "name": "version",
-          "required": true,
-          "type": "uint",
-          "version": 1
-        },
-        {
-          "name": "nonce",
-          "required": true,
-          "type": "buffer",
-          "version": 1
-        },
-        {
           "name": "publicKey",
           "required": true,
           "type": "fixed32",
@@ -30,6 +18,59 @@
           "required": true,
           "array": true,
           "type": "buffer",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "pointer",
+      "namespace": "broadcast",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "id",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "for",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "payload",
+          "required": true,
+          "array": true,
+          "type": "buffer",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "message",
+      "namespace": "broadcast",
+      "compact": false,
+      "flagsPosition": 1,
+      "fields": [
+        {
+          "name": "version",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "payload",
+          "required": false,
+          "type": "@broadcast/payload",
+          "version": 1
+        },
+        {
+          "name": "pointer",
+          "required": false,
+          "type": "@broadcast/pointer",
           "version": 1
         }
       ]

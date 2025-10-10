@@ -10,16 +10,6 @@ broadcast.register({
   name: 'payload',
   fields: [
     {
-      name: 'version',
-      type: 'uint',
-      required: true
-    },
-    {
-      name: 'nonce',
-      type: 'buffer',
-      required: true
-    },
-    {
       name: 'publicKey',
       type: 'fixed32',
       required: true
@@ -29,6 +19,49 @@ broadcast.register({
       type: 'buffer',
       array: true,
       required: true
+    }
+  ]
+})
+
+broadcast.register({
+  name: 'pointer',
+  fields: [
+    {
+      name: 'id',
+      type: 'uint',
+      required: true
+    },
+    {
+      name: 'for',
+      type: 'uint',
+      required: true
+    },
+    {
+      name: 'payload',
+      type: 'buffer',
+      array: true,
+      required: true
+    }
+  ]
+})
+
+broadcast.register({
+  name: 'message',
+  fields: [
+    {
+      name: 'version',
+      type: 'uint',
+      required: true
+    },
+    {
+      name: 'payload',
+      type: '@broadcast/payload',
+      required: false
+    },
+    {
+      name: 'pointer',
+      type: '@broadcast/pointer',
+      required: false
     }
   ]
 })

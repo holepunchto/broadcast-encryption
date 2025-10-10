@@ -21,7 +21,7 @@ const secretKey = b4a.alloc(sodium.crypto_box_SECRETKEYBYTES)
 const publicKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 const recipientKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 
-const EncryptionPayload = schema.resolveStruct('@broadcast/payload')
+const BroadcastMessage = schema.resolveStruct('@broadcast/message')
 
 module.exports = class BroadcastEncryption extends ReadyResource {
   constructor(core, opts = {}) {
@@ -63,11 +63,37 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
   async update(key, recipients) {
     const payload = await BroadcastEncryption.encrypt(key, recipients)
-    await this.core.append(payload)
+    await this.core.append(c.encode(BroadcastMessage, { version: 0, payload }))
   }
 
   createEncryptionProvider(opts) {
     return this.encryption.createEncryptionProvider(opts)
+  }
+
+  async _get(index, opts) {
+    const block = await this.core.get(index, opts)
+    if (!block) return null
+
+    return c.decode(BroadcastMessage, block)
+  }
+
+  async _getLatestKey(opts) {
+    let id = this.core.length
+
+    while (id > 0) {
+      const block = await this._get(id - 1, opts)
+
+      if (block && block.payload) {
+        return {
+          id,
+          encryptionKey: this._decrypt(block.payload)
+        }
+      }
+
+      id--
+    }
+
+    return { id: 0, encryptionKey: null }
   }
 
   async get(id, opts) {
@@ -75,23 +101,30 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       await this.initialised()
     }
 
-    if (id === -1) id = this.core.length
+    if (id === -1) {
+      return this._getLatestKey()
+    }
 
-    if (!id) return { id: 0, encryptionKey: null }
+    if (id === 0) {
+      return { id: 0, encryptionKey: null }
+    }
 
-    const payload = await this.core.get(id - 1, opts)
-    if (!payload) return null
-
-    if (!this.keyPair) throw new Error('No key pair provided')
-
-    const encryptionKey = await BroadcastEncryption.decrypt(payload, this.keyPair.secretKey)
-
-    if (!encryptionKey) throw new Error('Broadcast decryption failed')
+    const block = await this._get(id - 1, opts)
+    if (!block) return null
 
     return {
       id,
-      encryptionKey
+      encryptionKey: this._decrypt(block.payload)
     }
+  }
+
+  _decrypt(block) {
+    if (!this.keyPair) throw new Error('No key pair provided')
+
+    const encryptionKey = BroadcastEncryption.decrypt(block, this.keyPair.secretKey)
+    if (!encryptionKey) throw new Error('Broadcast decryption failed')
+
+    return encryptionKey
   }
 
   static encrypt(data, recipients) {
@@ -100,8 +133,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     sodium.crypto_box_seed_keypair(publicKey, secretKey, seed)
     sodium.crypto_generichash_batch(nonce, [NS_NONCE, publicKey])
 
-    const payload = {
-      version: 0,
+    const broadcast = {
       publicKey,
       payload: []
     }
@@ -114,14 +146,14 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       sodium.crypto_sign_ed25519_pk_to_curve25519(recipientKey, recipient)
       sodium.crypto_box_easy(enc, data, nonce, recipientKey, secretKey)
 
-      payload.payload.push(enc)
+      broadcast.payload.push(enc)
     }
 
-    return c.encode(EncryptionPayload, payload)
+    return broadcast
   }
 
-  static decrypt(ciphertext, recipientSecretKey) {
-    const { publicKey, payload } = c.decode(EncryptionPayload, ciphertext)
+  static decrypt(broadcast, recipientSecretKey) {
+    const { publicKey, payload } = broadcast
 
     const data = b4a.alloc(payload[0].byteLength - sodium.crypto_box_MACBYTES)
 
