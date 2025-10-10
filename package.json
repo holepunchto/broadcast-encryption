@@ -1,0 +1,35 @@
+{
+  "name": "broadcast-encryption",
+  "version": "1.0.0",
+  "description": "Distribute encryption keys to a dynamic set of receivers",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --write .",
+    "test": "prettier --check . && node test/*.js"
+  },
+  "keywords": [],
+  "author": "Holepunch Inc.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "b4a": "^1.7.3",
+    "compact-encoding": "^2.17.0",
+    "hypercore": "^11.18.2",
+    "ready-resource": "^1.2.0",
+    "resolve-reject-promise": "^1.1.0",
+    "sodium-universal": "^5.0.1"
+  },
+  "devDependencies": {
+    "brittle": "^3.19.0",
+    "hypercore-crypto": "^3.6.1",
+    "prettier": "^3.6.2",
+    "prettier-config-holepunch": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holepunchto/broadcast-encryption.git"
+  },
+  "bugs": {
+    "url": "https://github.com/holepunchto/broadcast-encryption/issues"
+  },
+  "homepage": "https://github.com/holepunchto/broadcast-encryption#readme"
+}
