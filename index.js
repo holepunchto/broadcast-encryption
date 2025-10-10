@@ -1,6 +1,7 @@
 const sodium = require('sodium-universal')
 const ReadyResource = require('ready-resource')
 const DefaultEncryption = require('hypercore/lib/default-encryption.js')
+const HypercoreEncryption = require('hypercore-encryption')
 const crypto = require('hypercore-crypto')
 const c = require('compact-encoding')
 const b4a = require('b4a')
@@ -49,6 +50,8 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.keyPair = opts.keyPair || null
     this.genesisEntropy = opts.genesis || null
 
+    this.encryption = new HypercoreEncryption(this.get.bind(this))
+
     this._initialising = null
   }
 
@@ -82,6 +85,10 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   async update(key, recipients) {
     const payload = await BroadcastEncryption.encrypt(key, recipients)
     await this.core.append(payload)
+  }
+
+  createEncryptionProvider (opts) {
+    return this.encryption.createEncryptionProvider(opts)
   }
 
   async get(id, opts) {
