@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "schema": [
+    {
+      "name": "payload",
+      "namespace": "broadcast",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "version",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "nonce",
+          "required": true,
+          "type": "buffer",
+          "version": 1
+        },
+        {
+          "name": "publicKey",
+          "required": true,
+          "type": "fixed32",
+          "version": 1
+        },
+        {
+          "name": "payload",
+          "required": true,
+          "array": true,
+          "type": "buffer",
+          "version": 1
+        }
+      ]
+    }
+  ]
+}

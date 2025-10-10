@@ -7,6 +7,8 @@ const c = require('compact-encoding')
 const b4a = require('b4a')
 const rrp = require('resolve-reject-promise')
 
+const schema = require('./spec/broadcast-encryption')
+
 const [DEFAULT_NAMESPACE, GENESIS_ENTROPY, NS_NONCE, NS_KEYPAIR_SEED] = crypto.namespace(
   'broadcast-encryption',
   4
@@ -19,27 +21,7 @@ const secretKey = b4a.alloc(sodium.crypto_box_SECRETKEYBYTES)
 const publicKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 const recipientKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 
-const PayloadArray = c.array(c.buffer)
-
-const EncryptionPayload = {
-  preencode(state, m) {
-    c.buffer.preencode(state, m.nonce)
-    c.fixed32.preencode(state, m.publicKey)
-    PayloadArray.preencode(state, m.payload)
-  },
-  encode(state, m) {
-    c.buffer.encode(state, m.nonce)
-    c.fixed32.encode(state, m.publicKey)
-    PayloadArray.encode(state, m.payload)
-  },
-  decode(state) {
-    return {
-      nonce: c.buffer.decode(state),
-      publicKey: c.fixed32.decode(state),
-      payload: PayloadArray.decode(state)
-    }
-  }
-}
+const EncryptionPayload = schema.resolveStruct('@broadcast/payload')
 
 module.exports = class BroadcastEncryption extends ReadyResource {
   constructor(core, opts = {}) {
@@ -127,6 +109,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     sodium.crypto_generichash_batch(nonce, [NS_NONCE, publicKey])
 
     const payload = {
+      version: 0,
       publicKey,
       payload: []
     }
