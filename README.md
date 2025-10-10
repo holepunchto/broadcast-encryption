@@ -50,6 +50,10 @@ Get the encryption key corresponding to `id`.
 
 If `id` is passed as `-1`, the latest encryption key shall be returned.
 
+#### `const encryption = await broadcast.createEncryptionProvider(opts)`
+
+Create a [`HypercoreEncryption`](https://github.com/holepunchto/hypercore-encryption) provider to pass to a hypercore.
+
 #### `const payload = BroadcastEncryption.encrypt(data, recipients)`
 
 Static helper to broadcast encrypt a message.
