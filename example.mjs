@@ -46,13 +46,13 @@ await broadcaster.update(b4a.alloc(32, 3), [keyPair1.publicKey])
 
 await writer.append('block 5')
 
-console.log((await reader.get(0, { raw: true })))
-console.log((await reader.get(1, { raw: true })))
-console.log((await reader.get(2, { raw: true })))
-console.log((await reader.get(3, { raw: true })))
+console.log(await reader.get(0))
+console.log(await reader.get(1))
+console.log(await reader.get(2))
+console.log(await reader.get(3))
 
 // this will throw
-console.log((await reader.get(4)))
+console.log(await reader.get(4))
 
 function replicate(a, b) {
   let destroyed = false

@@ -87,7 +87,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     await this.core.append(payload)
   }
 
-  createEncryptionProvider (opts) {
+  createEncryptionProvider(opts) {
     return this.encryption.createEncryptionProvider(opts)
   }
 
@@ -101,7 +101,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     if (id === 0) {
       return {
         id: 0,
-        entropy: this.genesisEntropy
+        encryptionKey: this.genesisEntropy
       }
     }
 
@@ -110,13 +110,13 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     if (!this.keyPair) throw new Error('No key pair provided')
 
-    const entropy = await BroadcastEncryption.decrypt(payload, this.keyPair.secretKey)
+    const encryptionKey = await BroadcastEncryption.decrypt(payload, this.keyPair.secretKey)
 
-    if (!entropy) throw new Error('Broadcast decryption failed')
+    if (!encryptionKey) throw new Error('Broadcast decryption failed')
 
     return {
       id,
-      entropy
+      encryptionKey
     }
   }
 
