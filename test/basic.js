@@ -85,6 +85,38 @@ test('bootstrap', async (t) => {
   await receiver.ready()
 
   t.alike(await receiver.get(1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
+
+  await broadcaster.update(b4a.alloc(32, 6), [a.publicKey, b.publicKey])
+
+  t.alike(await receiver.get(11), { id: 11, encryptionKey: b4a.alloc(32, 6) })
+})
+
+test('removed and readded', async (t) => {
+  const local = new Hypercore(await t.tmp())
+  await local.ready()
+
+  const remote = new Hypercore(await t.tmp(), { key: local.key })
+  await remote.ready()
+
+  const a = crypto.keyPair()
+  const b = crypto.keyPair()
+
+  const broadcaster = new Broadcast(local, { keyPair: a })
+  await broadcaster.ready()
+
+  await broadcaster.update(b4a.alloc(32, 1), [a.publicKey, b.publicKey])
+  await broadcaster.update(b4a.alloc(32, 3), [a.publicKey])
+  await broadcaster.update(b4a.alloc(32, 5), [a.publicKey, b.publicKey])
+
+  replicate(local, remote, t)
+
+  const receiver = new Broadcast(remote, { keyPair: b })
+  await receiver.ready()
+
+  t.alike(await receiver.get(0), { id: 0, encryptionKey: null })
+  t.alike(await receiver.get(1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
+  t.alike(await receiver.get(3), { id: 3, encryptionKey: b4a.alloc(32, 3) })
+  t.alike(await receiver.get(5), { id: 5, encryptionKey: b4a.alloc(32, 5) })
 })
 
 function replicate(a, b, t) {

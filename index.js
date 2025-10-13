@@ -42,6 +42,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     await this.core.ready()
   }
 
+  // autobase needs to open the module before the core
   initialised() {
     if (this.core !== null) return this.core.ready()
     if (this._initialising) return this._initialising
@@ -112,10 +113,16 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       const block = await this._get(id - 1, opts)
 
       if (block && block.payload) {
-        return {
+        const key = {
           id,
-          encryptionKey: this._decrypt(block.payload)
+          encryptionKey: this._unpack(block.payload)
         }
+
+        if (!this.bootstrap || this.bootstrap.id < id) {
+          this.bootstrap = key
+        }
+
+        return key
       }
 
       id--
@@ -143,16 +150,19 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     let encryptionKey = null
 
     try {
-      encryptionKey = this._decrypt(block.payload)
+      encryptionKey = this._unpack(block.payload)
     } catch (err) {
       encryptionKey = await this.getByPointer(id)
       if (!encryptionKey) throw err
     }
 
-    return {
-      id,
-      encryptionKey
+    const key = { id, encryptionKey }
+
+    if (!this.bootstrap || this.bootstrap.id < id) {
+      this.bootstrap = key
     }
+
+    return key
   }
 
   async getByPointer(id) {
@@ -171,7 +181,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return key
   }
 
-  _decrypt(block) {
+  _unpack(block) {
     if (!this.keyPair) throw new Error('No key pair provided')
 
     const encryptionKey = BroadcastEncryption.decrypt(block, this.keyPair.secretKey)
