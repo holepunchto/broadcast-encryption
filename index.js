@@ -118,9 +118,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
           encryptionKey: this._unpack(block.payload)
         }
 
-        if (!this.bootstrap || this.bootstrap.id < id) {
-          this.bootstrap = key
-        }
+        this._setBootstrapMaybe(key)
 
         return key
       }
@@ -158,11 +156,16 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     const key = { id, encryptionKey }
 
-    if (!this.bootstrap || this.bootstrap.id < id) {
-      this.bootstrap = key
-    }
+    this._setBootstrapMaybe(key)
 
     return key
+  }
+
+  _setBootstrapMaybe(key) {
+    if (!this.bootstrap || this.bootstrap.id < key.id) {
+      this.bootstrap = key
+      this.emit('update', key.id)
+    }
   }
 
   async getByPointer(id) {
