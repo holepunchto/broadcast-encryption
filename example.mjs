@@ -1,13 +1,16 @@
 import Corestore from 'corestore'
 import b4a from 'b4a'
 import crypto from 'hypercore-crypto'
+import tmpDir from 'test-tmp'
 import Broadcast from './index.js'
+
+const teardowns = []
 
 const keyPair1 = crypto.keyPair()
 const keyPair2 = crypto.keyPair()
 
-const local = new Corestore('./local')
-const remote = new Corestore('./remote')
+const local = new Corestore(await tmpDir({ teardown }))
+const remote = new Corestore(await tmpDir({ teardown }))
 
 // set up the writer
 const broadcasterCore = local.get({ name: 'broadcast' })
@@ -48,13 +51,17 @@ await broadcaster.update(b4a.alloc(32, 3), [keyPair1.publicKey])
 
 await writer.append('block 5')
 
-console.log(await reader.get(0))
-console.log(await reader.get(1))
-console.log(await reader.get(2))
-console.log(await reader.get(3))
+try {
+  console.log(await reader.get(0))
+  console.log(await reader.get(1))
+  console.log(await reader.get(2))
+  console.log(await reader.get(3))
 
-// this will throw
-console.log(await reader.get(4))
+  // this will throw
+  console.log(await reader.get(4))
+} finally {
+  await shutdown()
+}
 
 function replicate(a, b) {
   let destroyed = false
@@ -79,4 +86,12 @@ function replicate(a, b) {
 
     return end
   }
+}
+
+function teardown(fn) {
+  teardowns.push(fn)
+}
+
+function shutdown() {
+  return Promise.all(teardowns.map((fn) => fn()))
 }
