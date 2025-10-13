@@ -4,6 +4,7 @@ const DefaultEncryption = require('hypercore/lib/default-encryption.js')
 const HypercoreEncryption = require('hypercore-encryption')
 const crypto = require('hypercore-crypto')
 const c = require('compact-encoding')
+const safetyCatch = require('safety-catch')
 const b4a = require('b4a')
 const rrp = require('resolve-reject-promise')
 
@@ -31,6 +32,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.encryption = new HypercoreEncryption(this.get.bind(this))
 
     this.bootstrap = opts.bootstrap || null
+    this.core.on('append', this.refresh.bind(this))
 
     this._initialising = null
   }
@@ -62,6 +64,10 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return this.core ? this.core.length : 0
   }
 
+  refresh() {
+    return this._getLatestKey().catch(safetyCatch)
+  }
+
   async update(key, recipients) {
     const payload = await BroadcastEncryption.encrypt(key, recipients)
 
@@ -79,7 +85,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       return this._append({ pointer: null, payload: null })
     }
 
-    const [old, current] = await Promise.all([this.get(to), this.get(-1)])
+    const [old, current] = await Promise.all([this.get(to), this._getLatestKey()])
 
     const buffer = encryptPointer(old.encryptionKey, current.encryptionKey, nonce)
     const pointer = { to: old.id, from: current.id, nonce, buffer }
