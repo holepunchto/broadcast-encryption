@@ -143,7 +143,7 @@ test('access previous keys', async (t) => {
   await t.exception(receiver.get(1))
   await t.exception(receiver.get(3))
 
-  const update = new Promise(resolve => receiver.on('update', resolve))
+  const update = new Promise((resolve) => receiver.on('update', resolve))
 
   await broadcaster.update(b4a.alloc(32, 5), [a.publicKey, b.publicKey])
 

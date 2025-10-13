@@ -32,7 +32,7 @@ Instantiate a new broadcast instance.
 ```
 {
   keyPair, // receiver key pair used for decryption
-  genesis // initial key to use if core is empty, default is null
+  bootstrap // initial key information to use
 }
 ```
 
@@ -53,6 +53,10 @@ If `id` is passed as `-1`, the latest encryption key shall be returned.
 #### `const encryption = await broadcast.createEncryptionProvider(opts)`
 
 Create a [`HypercoreEncryption`](https://github.com/holepunchto/hypercore-encryption) provider to pass to a hypercore.
+
+#### `broadcast.on('update', (id) => {})`
+
+An `update` event is emitted when a new encryption key is loaded.
 
 #### `const payload = BroadcastEncryption.encrypt(data, recipients)`
 
