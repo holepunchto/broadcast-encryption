@@ -27,19 +27,23 @@ broadcast.register({
   name: 'pointer',
   fields: [
     {
-      name: 'id',
+      name: 'to',
       type: 'uint',
       required: true
     },
     {
-      name: 'for',
+      name: 'from',
       type: 'uint',
       required: true
     },
     {
-      name: 'payload',
+      name: 'nonce',
       type: 'buffer',
-      array: true,
+      required: true
+    },
+    {
+      name: 'buffer',
+      type: 'buffer',
       required: true
     }
   ]

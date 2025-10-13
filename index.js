@@ -9,10 +9,8 @@ const rrp = require('resolve-reject-promise')
 
 const schema = require('./spec/broadcast-encryption')
 
-const [DEFAULT_NAMESPACE, GENESIS_ENTROPY, NS_NONCE, NS_KEYPAIR_SEED] = crypto.namespace(
-  'broadcast-encryption',
-  4
-)
+const [DEFAULT_NAMESPACE, GENESIS_ENTROPY, NS_NONCE, NS_KEYPAIR_SEED, NS_SYMMETRIC_NONCE] =
+  crypto.namespace('broadcast-encryption', 5)
 
 // ephemeral state
 const nonce = b4a.alloc(sodium.crypto_stream_NONCEBYTES)
@@ -20,6 +18,7 @@ const hash = nonce.subarray(0, sodium.crypto_generichash_BYTES_MIN)
 const secretKey = b4a.alloc(sodium.crypto_box_SECRETKEYBYTES)
 const publicKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 const recipientKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
+const symmetricKey = b4a.alloc(sodium.crypto_secretbox_KEYBYTES)
 
 const BroadcastMessage = schema.resolveStruct('@broadcast/message')
 
@@ -30,6 +29,8 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.core = core || null
     this.keyPair = opts.keyPair || null
     this.encryption = new HypercoreEncryption(this.get.bind(this))
+
+    this.bootstrap = opts.bootstrap || null
 
     this._initialising = null
   }
@@ -63,7 +64,27 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
   async update(key, recipients) {
     const payload = await BroadcastEncryption.encrypt(key, recipients)
-    await this.core.append(c.encode(BroadcastMessage, { version: 0, payload }))
+
+    await this._append({ payload })
+    const id = this.core.length
+
+    await this.point(id - 2) // point to previous key
+
+    return id
+  }
+
+  async point(to) {
+    // first pointer is null to maintain offset
+    if (to < 0) {
+      return this._append({ pointer: null, payload: null })
+    }
+
+    const [old, current] = await Promise.all([this.get(to), this.get(-1)])
+
+    const buffer = encryptPointer(old.encryptionKey, current.encryptionKey, nonce)
+    const pointer = { to: old.id, from: current.id, nonce, buffer }
+
+    await this._append({ pointer })
   }
 
   createEncryptionProvider(opts) {
@@ -71,10 +92,11 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   }
 
   async _get(index, opts) {
-    const block = await this.core.get(index, opts)
-    if (!block) return null
+    return this.core.get(index, { ...opts, valueEncoding: BroadcastMessage })
+  }
 
-    return c.decode(BroadcastMessage, block)
+  async _append({ pointer, payload }) {
+    return this.core.append(c.encode(BroadcastMessage, { version: 0, pointer, payload }))
   }
 
   async _getLatestKey(opts) {
@@ -110,12 +132,37 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     }
 
     const block = await this._get(id - 1, opts)
-    if (!block) return null
+    if (!block) return null // no key in core
+
+    let encryptionKey = null
+
+    try {
+      encryptionKey = this._decrypt(block.payload)
+    } catch (err) {
+      encryptionKey = await this.getByPointer(id)
+      if (!encryptionKey) throw err
+    }
 
     return {
       id,
-      encryptionKey: this._decrypt(block.payload)
+      encryptionKey
     }
+  }
+
+  async getByPointer(id) {
+    if (!this.bootstrap || this.bootstrap.id < id) return null
+
+    let seq = this.bootstrap.id
+    let key = this.bootstrap.encryptionKey
+
+    while (seq > id) {
+      const { pointer } = await this._get(seq)
+
+      seq = pointer.to
+      key = decryptPointer(pointer.buffer, pointer.nonce, key)
+    }
+
+    return key
   }
 
   _decrypt(block) {
@@ -203,4 +250,20 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     return true
   }
+}
+
+function encryptPointer(to, from, nonce) {
+  const buffer = b4a.alloc(to.byteLength + sodium.crypto_secretbox_MACBYTES)
+
+  sodium.crypto_generichash_batch(nonce, [NS_SYMMETRIC_NONCE, to])
+  sodium.crypto_secretbox_easy(buffer, to, nonce, from)
+
+  return buffer
+}
+
+function decryptPointer(data, nonce, key) {
+  const buffer = b4a.alloc(data.byteLength - sodium.crypto_secretbox_MACBYTES)
+  sodium.crypto_secretbox_open_easy(buffer, data, nonce, key)
+
+  return buffer
 }

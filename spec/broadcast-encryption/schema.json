@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "payload",
@@ -29,23 +29,28 @@
       "flagsPosition": -1,
       "fields": [
         {
-          "name": "id",
+          "name": "to",
           "required": true,
           "type": "uint",
           "version": 1
         },
         {
-          "name": "for",
+          "name": "from",
           "required": true,
           "type": "uint",
           "version": 1
         },
         {
-          "name": "payload",
+          "name": "nonce",
           "required": true,
-          "array": true,
           "type": "buffer",
           "version": 1
+        },
+        {
+          "name": "buffer",
+          "required": true,
+          "type": "buffer",
+          "version": 2
         }
       ]
     },

@@ -18,7 +18,7 @@ test('simple', async (t) => {
 
   t.alike(await broadcast.get(0), { id: 0, encryptionKey: null })
   t.alike(await broadcast.get(1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
-  t.alike(await broadcast.get(2, { wait: false }), null)
+  t.alike(await broadcast.get(3, { wait: false }), null)
   t.alike(await broadcast.get(-1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
 })
 
@@ -45,12 +45,46 @@ test('replication', async (t) => {
 
   t.alike(await receiver.get(0), { id: 0, encryptionKey: null })
   t.alike(await receiver.get(1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
-  t.alike(await receiver.get(2), { id: 2, encryptionKey: b4a.alloc(32, 2) })
+  t.alike(await receiver.get(3), { id: 3, encryptionKey: b4a.alloc(32, 2) })
 
   // remove b from receivers
   await broadcaster.update(b4a.alloc(32, 3), [a.publicKey])
 
-  await t.exception(receiver.get(3), /Broadcast decryption failed/)
+  await t.exception(receiver.get(5), /Broadcast decryption failed/)
+})
+
+test('bootstrap', async (t) => {
+  const local = new Hypercore(await t.tmp())
+  await local.ready()
+
+  const remote = new Hypercore(await t.tmp(), { key: local.key })
+  await remote.ready()
+
+  const a = crypto.keyPair()
+  const b = crypto.keyPair()
+
+  const broadcaster = new Broadcast(local, { keyPair: a })
+  await broadcaster.ready()
+
+  await broadcaster.update(b4a.alloc(32, 1), [a.publicKey])
+  await broadcaster.update(b4a.alloc(32, 2), [a.publicKey])
+  await broadcaster.update(b4a.alloc(32, 3), [a.publicKey])
+  await broadcaster.update(b4a.alloc(32, 4), [a.publicKey])
+  await broadcaster.update(b4a.alloc(32, 5), [a.publicKey])
+
+  replicate(local, remote, t)
+
+  const receiver = new Broadcast(remote, {
+    keyPair: b,
+    bootstrap: {
+      encryptionKey: b4a.alloc(32, 5),
+      id: 9
+    }
+  })
+
+  await receiver.ready()
+
+  t.alike(await receiver.get(1), { id: 1, encryptionKey: b4a.alloc(32, 1) })
 })
 
 function replicate(a, b, t) {
