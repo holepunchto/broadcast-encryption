@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Distribute encryption keys to a dynamic set of receivers",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "spec/*"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "test": "prettier --check . && node test/*.js"
