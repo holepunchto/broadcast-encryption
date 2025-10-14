@@ -1,5 +1,5 @@
 {
-  "name": "broadcast-encryption",
+  "name": "@holepunchto/broadcast-encryption",
   "version": "1.0.0",
   "description": "Distribute encryption keys to a dynamic set of receivers",
   "main": "index.js",
