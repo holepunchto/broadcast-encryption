@@ -86,7 +86,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     const buffer = encryptPointer(old.encryptionKey, current.encryptionKey, nonce)
     const pointer = { to: old.id, from: current.id, nonce, buffer }
 
-    await this._append({ pointer })
+    return this._append({ pointer })
   }
 
   async _get(index, opts) {
