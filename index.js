@@ -20,6 +20,7 @@ const publicKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 const recipientKey = b4a.alloc(sodium.crypto_box_PUBLICKEYBYTES)
 const symmetricKey = b4a.alloc(sodium.crypto_secretbox_KEYBYTES)
 
+const BroadcastPayload = schema.resolveStruct('@broadcast/payload')
 const BroadcastMessage = schema.resolveStruct('@broadcast/message')
 
 module.exports = class BroadcastEncryption extends ReadyResource {
@@ -53,15 +54,18 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return this._getLatestKey().catch(safetyCatch)
   }
 
-  async update(key, recipients) {
-    const payload = await BroadcastEncryption.encrypt(key, recipients)
-
+  async append(payload) {
     await this._append({ payload })
     const id = this.core.length
 
     await this.point(id - 2) // point to previous key
 
     return id
+  }
+
+  async update(key, recipients) {
+    const payload = await BroadcastEncryption.encrypt(key, recipients)
+    return this.append(payload)
   }
 
   async point(to) {
@@ -177,6 +181,8 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return encryptionKey
   }
 
+  static PayloadEncoding = BroadcastPayload
+
   static encrypt(data, recipients) {
     const seed = crypto.hash([NS_KEYPAIR_SEED, data])
 
@@ -229,7 +235,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     sodium.crypto_box_seed_keypair(publicKey, secretKey, seed)
     sodium.crypto_generichash_batch(nonce, [NS_NONCE, publicKey])
 
-    const received = c.decode(EncryptionPayload, ciphertext)
+    const received = c.decode(BroadcastPayload, ciphertext)
 
     if (!b4a.equals(publicKey, received.publicKey)) return false
 
