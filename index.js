@@ -162,6 +162,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   async getByPointer(target) {
     if (!this._bootstrap || this._bootstrap.id < target) return null
 
+    // todo: we need to use the latest key here, tests are failing atm
     let id = null
     let seq = this._bootstrap.id
     let key = this._bootstrap.encryptionKey
