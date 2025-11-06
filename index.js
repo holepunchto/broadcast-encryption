@@ -278,7 +278,7 @@ function encryptPointer(to, from, nonce) {
 
 function decryptPointer(data, nonce, key) {
   const buffer = b4a.alloc(data.byteLength - sodium.crypto_secretbox_MACBYTES)
-  sodium.crypto_secretbox_open_easy(buffer, data, nonce, key)
+  if (!sodium.crypto_secretbox_open_easy(buffer, data, nonce, key)) return null
 
   return buffer
 }
