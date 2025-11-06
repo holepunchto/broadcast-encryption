@@ -29,7 +29,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.core = core
     this.keyPair = opts.keyPair || null
 
-    this.bootstrap = opts.bootstrap || null
+    this._bootstrap = opts.bootstrap || null
 
     this._initialising = null
   }
@@ -95,12 +95,15 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       const block = await this._get(id - 1, opts)
 
       if (block && block.payload) {
+        // use bootstrap if we have it
+        if (this._bootstrap && this._bootstrap.id === id) {
+          return this._bootstrap
+        }
+
         const key = {
           id,
           encryptionKey: this._unpack(block.payload)
         }
-
-        this._setBootstrapMaybe(key)
 
         return key
       }
@@ -124,6 +127,10 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       return { id: 0, encryptionKey: null }
     }
 
+    if (this._bootstrap && this._bootstrap.id === id) {
+      return this._bootstrap
+    }
+
     const block = await this._get(id - 1, opts)
     if (!block) return null // no key in core
 
@@ -138,29 +145,33 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     const key = { id, encryptionKey }
 
-    this._setBootstrapMaybe(key)
-
     return key
   }
 
-  _setBootstrapMaybe(key) {
-    if (!this.bootstrap || this.bootstrap.id < key.id) {
-      this.bootstrap = key
+  bootstrap(key) {
+    if (!this._bootstrap || this._bootstrap.id < key.id) {
+      this._bootstrap = key
       this.emit('update', key.id)
     }
   }
 
-  async getByPointer(id) {
-    if (!this.bootstrap || this.bootstrap.id < id) return null
+  async getBootstrap() {
+    return this._getLatestKey()
+  }
 
-    let seq = this.bootstrap.id
-    let key = this.bootstrap.encryptionKey
+  async getByPointer(id) {
+    if (!this._bootstrap || this._bootstrap.id < id) return null
+
+    let seq = this._bootstrap.id
+    let key = this._bootstrap.encryptionKey
 
     while (seq > id) {
-      const { pointer } = await this._get(seq)
+      const block = await this._get(--seq)
 
-      seq = pointer.to
-      key = decryptPointer(pointer.buffer, pointer.nonce, key)
+      if (block.pointer === null) continue
+
+      seq = block.pointer.to
+      key = decryptPointer(block.pointer.buffer, block.pointer.nonce, key)
     }
 
     return key
@@ -229,9 +240,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     sodium.crypto_box_seed_keypair(publicKey, secretKey, seed)
     sodium.crypto_generichash_batch(nonce, [NS_NONCE, publicKey])
 
-    const received = c.decode(BroadcastPayload, ciphertext)
-
-    if (!b4a.equals(publicKey, received.publicKey)) return false
+    if (!b4a.equals(publicKey, ciphertext.publicKey)) return false
 
     const expected = b4a.alloc(data.byteLength + sodium.crypto_box_MACBYTES)
 
@@ -241,8 +250,8 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
       let found = false
 
-      for (const ciphertext of received.payload) {
-        if (b4a.equals(ciphertext, expected)) {
+      for (const buffer of ciphertext.payload) {
+        if (b4a.equals(buffer, expected)) {
           found = true
           break
         }
