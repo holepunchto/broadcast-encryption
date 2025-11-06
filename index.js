@@ -159,22 +159,23 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return this._getLatestKey()
   }
 
-  async getByPointer(id) {
-    if (!this._bootstrap || this._bootstrap.id < id) return null
+  async getByPointer(target) {
+    if (!this._bootstrap || this._bootstrap.id < target) return null
 
+    let id = null
     let seq = this._bootstrap.id
     let key = this._bootstrap.encryptionKey
 
-    while (seq > id) {
-      const block = await this._get(--seq)
+    while (seq > target) {
+      const { pointer } = await this._get(--seq)
 
-      if (block.pointer === null) continue
+      if (pointer === null) continue
 
-      seq = block.pointer.to
-      key = decryptPointer(block.pointer.buffer, block.pointer.nonce, key)
+      id = pointer.to
+      key = decryptPointer(pointer.buffer, pointer.nonce, key)
     }
 
-    return key
+    return id === null ? null : key
   }
 
   _unpack(block) {
