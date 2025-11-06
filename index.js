@@ -30,8 +30,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.keyPair = opts.keyPair || null
 
     this._bootstrap = opts.bootstrap || null
-
-    this._initialising = null
     this._latest = 0
   }
 
@@ -126,10 +124,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   }
 
   async get(id, opts) {
-    if (!this.core) {
-      await this.initialised()
-    }
-
     if (id === -1) {
       return this._getLatestKey()
     }
