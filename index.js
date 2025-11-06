@@ -1,6 +1,5 @@
 const sodium = require('sodium-universal')
 const ReadyResource = require('ready-resource')
-const HypercoreEncryption = require('hypercore-encryption')
 const crypto = require('hypercore-crypto')
 const c = require('compact-encoding')
 const safetyCatch = require('safety-catch')
@@ -29,7 +28,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
 
     this.core = core
     this.keyPair = opts.keyPair || null
-    this.encryption = new HypercoreEncryption(this.get.bind(this))
 
     this.bootstrap = opts.bootstrap || null
 
@@ -80,10 +78,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     const pointer = { to: old.id, from: current.id, nonce, buffer }
 
     await this._append({ pointer })
-  }
-
-  createEncryptionProvider(opts) {
-    return this.encryption.createEncryptionProvider(opts)
   }
 
   async _get(index, opts) {
