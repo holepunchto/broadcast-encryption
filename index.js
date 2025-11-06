@@ -1,6 +1,5 @@
 const sodium = require('sodium-universal')
 const ReadyResource = require('ready-resource')
-const DefaultEncryption = require('hypercore/lib/default-encryption.js')
 const HypercoreEncryption = require('hypercore-encryption')
 const crypto = require('hypercore-crypto')
 const c = require('compact-encoding')
@@ -27,38 +26,23 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   constructor(core, opts = {}) {
     super()
 
-    this.core = core || null
+    this.core = core
     this.keyPair = opts.keyPair || null
     this.encryption = new HypercoreEncryption(this.get.bind(this))
 
     this.bootstrap = opts.bootstrap || null
-    this.core.on('append', this.refresh.bind(this))
 
     this._initialising = null
   }
 
   async _open() {
-    await this.initialised()
     await this.core.ready()
-  }
 
-  // autobase needs to open the module before the core
-  initialised() {
-    if (this.core !== null) return this.core.ready()
-    if (this._initialising) return this._initialising
-
-    this._initialising = rrp()
-
-    return this._initialising.promise
+    this.core.on('append', this.refresh.bind(this))
   }
 
   _close() {
-    if (this._initialising) {
-      this._initialising.reject(new Error('Encryption closed'))
-      this._initialising = null
-    }
-
-    if (this.core) return this.core.close()
+    return this.core.close()
   }
 
   id() {
