@@ -139,7 +139,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     try {
       encryptionKey = this._unpack(block.payload)
     } catch (err) {
-      encryptionKey = await this.getByPointer(id)
+      encryptionKey = await this._getByPointer(id)
       if (!encryptionKey) throw err
     }
 
@@ -159,13 +159,14 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return this._getLatestKey()
   }
 
-  async getByPointer(target) {
-    if (!this._bootstrap || this._bootstrap.id < target) return null
+  async _getByPointer(target) {
+    const bootstrap = await this._getLatestKey()
+    if (!bootstrap || bootstrap.id < target) return null
 
-    // todo: we need to use the latest key here, tests are failing atm
     let id = null
-    let seq = this._bootstrap.id
-    let key = this._bootstrap.encryptionKey
+
+    let seq = bootstrap.id
+    let key = bootstrap.encryptionKey
 
     while (seq > target) {
       const block = await this._get(seq--)
@@ -175,7 +176,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       id = block.pointer.to
       key = decryptPointer(block.pointer.buffer, block.pointer.nonce, key)
 
-      if (key === null) throw new Error('Pointer decryption failed')
+      if (key === null) return null
     }
 
     return id === null ? null : key
