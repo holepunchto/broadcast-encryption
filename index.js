@@ -32,6 +32,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this._bootstrap = opts.bootstrap || null
 
     this._initialising = null
+    this._latest = 0
   }
 
   async _open() {
@@ -48,8 +49,18 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     return this.core ? this.core.length : 0
   }
 
-  refresh() {
-    return this._getLatestKey().catch(safetyCatch)
+  async refresh() {
+    let key = null
+    try {
+      key = await this._getLatestKey()
+    } catch (err) {
+      safetyCatch(err)
+    }
+
+    if (key.id < this._latest) return
+
+    this._latest = key.id
+    this.emit('update', key.id)
   }
 
   async append(payload) {
