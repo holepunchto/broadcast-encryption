@@ -55,7 +55,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       safetyCatch(err)
     }
 
-    if (key.id < this._latest) return
+    if (!key || key.id < this._latest) return
 
     this._latest = key.id
     this.emit('update', key.id)
