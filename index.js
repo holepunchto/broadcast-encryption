@@ -30,8 +30,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     this.keyPair = opts.keyPair || null
 
     this._bootstrap = opts.bootstrap || null
-
-    this._initialising = null
     this._latest = 0
   }
 
@@ -57,7 +55,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
       safetyCatch(err)
     }
 
-    if (key.id < this._latest) return
+    if (!key || key.id < this._latest) return
 
     this._latest = key.id
     this.emit('update', key.id)
@@ -88,7 +86,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     const buffer = encryptPointer(old.encryptionKey, current.encryptionKey, nonce)
     const pointer = { to: old.id, from: current.id, nonce, buffer }
 
-    await this._append({ pointer })
+    return this._append({ pointer })
   }
 
   async _get(index, opts) {
@@ -126,10 +124,6 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   }
 
   async get(id, opts) {
-    if (!this.core) {
-      await this.initialised()
-    }
-
     if (id === -1) {
       return this._getLatestKey()
     }
