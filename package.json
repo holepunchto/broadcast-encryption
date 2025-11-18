@@ -1,6 +1,6 @@
 {
   "name": "@holepunchto/broadcast-encryption",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Distribute encryption keys to a dynamic set of receivers",
   "main": "index.js",
   "files": [
