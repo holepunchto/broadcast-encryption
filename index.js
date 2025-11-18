@@ -62,7 +62,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
   }
 
   async append(payload) {
-    await this._append({ payload })
+    await this._append({ payload, pointer: null })
     const id = this.core.length
 
     await this.point(id - 2) // point to previous key
@@ -86,7 +86,7 @@ module.exports = class BroadcastEncryption extends ReadyResource {
     const buffer = encryptPointer(old.encryptionKey, current.encryptionKey, nonce)
     const pointer = { to: old.id, from: current.id, nonce, buffer }
 
-    return this._append({ pointer })
+    return this._append({ payload: null, pointer })
   }
 
   async _get(index, opts) {
