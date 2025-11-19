@@ -56,6 +56,10 @@ If `id` is passed as `-1`, the latest encryption key shall be returned.
 
 `opts` are passed to the underlying `core.get()`.
 
+#### `const { id, encryptionKey } = await broadcast.getBootstrap()`
+
+Returns the latest `encryptionKey` & `id` which can be passed to the `BroadcastEncryption` `bootstrap` option when reloading.
+
 #### `broadcast.on('update', (id) => {})`
 
 An `update` event is emitted when a new encryption key is loaded.
