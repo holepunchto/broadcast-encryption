@@ -48,11 +48,13 @@ Append an encrypted `payload`, usually created by `BroadcastEncryption.encrypt()
 
 Distribute the updated `key` to all members of `recipients`. Returns the update's `id`.
 
-#### `const { id, encryptionKey } = await broadcast.get(id)`
+#### `const { id, encryptionKey } = await broadcast.get(id, opts = {})`
 
 Get the encryption key corresponding to `id`.
 
 If `id` is passed as `-1`, the latest encryption key shall be returned.
+
+`opts` are passed to the underlying `core.get()`.
 
 #### `const encryption = await broadcast.createEncryptionProvider(opts)`
 
