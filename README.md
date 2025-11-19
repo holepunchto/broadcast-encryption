@@ -40,9 +40,13 @@ Instantiate a new broadcast instance.
 
 The current encryption key id.
 
-#### `await broadcast.update(key, recipients)`
+#### `const id = await broadcast.append(payload)`
 
-Distribute the updated `key` to all members of `recipients`.
+Append an encrypted `payload`, usually created by `BroadcastEncryption.encrypt()`. Returns the key's `id`.
+
+#### `const id = await broadcast.update(key, recipients)`
+
+Distribute the updated `key` to all members of `recipients`. Returns the update's `id`.
 
 #### `const { id, encryptionKey } = await broadcast.get(id)`
 
