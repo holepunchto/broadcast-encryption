@@ -56,10 +56,6 @@ If `id` is passed as `-1`, the latest encryption key shall be returned.
 
 `opts` are passed to the underlying `core.get()`.
 
-#### `const encryption = await broadcast.createEncryptionProvider(opts)`
-
-Create a [`HypercoreEncryption`](https://github.com/holepunchto/hypercore-encryption) provider to pass to a hypercore.
-
 #### `broadcast.on('update', (id) => {})`
 
 An `update` event is emitted when a new encryption key is loaded.
