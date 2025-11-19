@@ -40,19 +40,25 @@ Instantiate a new broadcast instance.
 
 The current encryption key id.
 
-#### `await broadcast.update(key, recipients)`
+#### `const id = await broadcast.append(payload)`
 
-Distribute the updated `key` to all members of `recipients`.
+Append an encrypted `payload`, usually created by `BroadcastEncryption.encrypt()`. Returns the key's `id`.
 
-#### `const { id, encryptionKey } = await broadcast.get(id)`
+#### `const id = await broadcast.update(key, recipients)`
+
+Distribute the updated `key` to all members of `recipients`. Returns the update's `id`.
+
+#### `const { id, encryptionKey } = await broadcast.get(id, opts = {})`
 
 Get the encryption key corresponding to `id`.
 
 If `id` is passed as `-1`, the latest encryption key shall be returned.
 
-#### `const encryption = await broadcast.createEncryptionProvider(opts)`
+`opts` are passed to the underlying `core.get()`.
 
-Create a [`HypercoreEncryption`](https://github.com/holepunchto/hypercore-encryption) provider to pass to a hypercore.
+#### `const { id, encryptionKey } = await broadcast.getBootstrap()`
+
+Returns the latest `encryptionKey` & `id` which can be passed to the `BroadcastEncryption` `bootstrap` option when reloading.
 
 #### `broadcast.on('update', (id) => {})`
 
